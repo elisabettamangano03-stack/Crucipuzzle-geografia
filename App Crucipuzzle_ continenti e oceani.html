@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Crucipuzzle: continenti e oceani</title>
+<style>
+:root{--bg:#fff;--fg:#1d2433;--mut:#5b6577;--card:#eef2f8;--ac:#1f6fb2;--sel:#ffd966;--fl:78%;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a26;--fg:#e8edf6;--mut:#9aa6bb;--card:#1f2838;--ac:#6db3f2;--sel:#8a6d00;--fl:35%;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141a26;--fg:#e8edf6;--mut:#9aa6bb;--card:#1f2838;--ac:#6db3f2;--sel:#8a6d00;--fl:35%;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:620px;margin:0 auto;padding:14px}
+h1{font-size:1.3rem;margin:.2em 0 .5em}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+button{font:inherit;border:1px solid var(--ac);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;cursor:pointer}
+button.act{background:var(--ac);color:var(--bg)}
+.st{margin-left:auto;color:var(--mut);font-variant-numeric:tabular-nums}
+#grid{display:grid;gap:2px;touch-action:none;user-select:none;-webkit-user-select:none}
+#grid div{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--card);border-radius:4px;font-weight:700;font-size:clamp(.8rem,3.6vw,1.2rem)}
+#grid div.sel{background:var(--sel)}
+#words{display:flex;gap:8px;flex-wrap:wrap;padding:0;list-style:none}
+#words li{background:var(--card);border-radius:20px;padding:4px 12px;font-weight:600}
+#words li.done{text-decoration:line-through;opacity:.7}
+#msg{font-weight:700;color:var(--ac);min-height:1.4em}
+</style></head><body><main>
+<h1>🌍 Crucipuzzle: continenti e oceani</h1>
+<div class="row" id="tabs"></div>
+<div class="row"><span id="msg"></span><span class="st" id="st"></span></div>
+<div id="grid"></div>
+<ul id="words"></ul>
+<div class="row"><button id="nw">Nuova griglia</button><button id="sol">Mostra soluzioni</button></div>
+</main><script>
+const LV=[
+{n:"1 · Facile",s:8,w:["ASIA","EUROPA","AFRICA","ROMA"],d:[[0,1]]},
+{n:"2 · Base",s:10,w:["ASIA","EUROPA","AFRICA","AMERICA","PACIFICO","ATLANTICO"],d:[[0,1],[1,0]]},
+{n:"3 · Intermedio",s:12,w:["ASIA","EUROPA","AFRICA","AMERICA","OCEANIA","PACIFICO","ATLANTICO","ARTICO"],d:[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]]},
+{n:"4 · Avanzato",s:14,w:["EUROPA","AFRICA","ASIA","AMERICA","OCEANIA","ANTARTIDE","PACIFICO","ATLANTICO","INDIANO","ARTICO"],d:[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]]}];
+const $=i=>document.getElementById(i);
+let cur=0,G,P,found,t0,timer,start,sel=[],cells=[],done;
+function gen(){const l=LV[cur],s=l.s;G=Array.from({length:s},()=>Array(s).fill(""));P={};
+[...l.w].sort((a,b)=>b.length-a.length).forEach(w=>{for(;;){const [dr,dc]=l.d[Math.random()*l.d.length|0],r=Math.random()*s|0,c=Math.random()*s|0;
+const cs=[...w].map((_,i)=>[r+dr*i,c+dc*i]);
+if(cs.every(([a,b],i)=>a>=0&&b>=0&&a<s&&b<s&&(G[a][b]===""||G[a][b]===w[i]))){cs.forEach(([a,b],i)=>G[a][b]=w[i]);P[w]=cs;break}}});
+const A="ABCDEFGHILMNOPQRSTUVZ";G.forEach(r=>r.forEach((x,c)=>{if(!x)r[c]=A[Math.random()*A.length|0]}));
+found=new Set();done=false;clearInterval(timer);t0=null;$("msg").textContent="";$("st").textContent="";$("sol").textContent="Mostra soluzioni";draw()}
+function draw(){const l=LV[cur],g=$("grid");g.style.gridTemplateColumns="repeat("+l.s+",1fr)";g.innerHTML="";cells=[];
+G.forEach((row,r)=>{cells[r]=[];row.forEach((ch,c)=>{const d=document.createElement("div");d.textContent=ch;d.dataset.r=r;d.dataset.c=c;g.appendChild(d);cells[r][c]=d})});
+$("words").innerHTML="";l.w.forEach(w=>{const li=document.createElement("li");li.id="w_"+w;li.textContent=w;$("words").appendChild(li)});
+l.w.forEach((w,i)=>{if(found.has(w))mark(w,i)});upd()}
+function mark(w,i){const h=(i*47)%360;P[w].forEach(([r,c])=>{cells[r][c].style.background="hsl("+h+" 65% var(--fl))"});$("w_"+w).classList.add("done")}
+function upd(){$("st").textContent=found.size+"/"+LV[cur].w.length+(t0?" · "+Math.floor((Date.now()-t0)/1000)+"s":"")}
+function line(a,b){const dr=b[0]-a[0],dc=b[1]-a[1];if(dr&&dc&&Math.abs(dr)!==Math.abs(dc))return[a];const n=Math.max(Math.abs(dr),Math.abs(dc)),sr=Math.sign(dr),sc=Math.sign(dc);return Array.from({length:n+1},(_,i)=>[a[0]+sr*i,a[1]+sc*i])}
+function show(){document.querySelectorAll(".sel").forEach(e=>e.classList.remove("sel"));sel.forEach(([r,c])=>cells[r][c].classList.add("sel"))}
+function at(e){const el=document.elementFromPoint(e.clientX,e.clientY);return el&&el.dataset.r!==undefined?[+el.dataset.r,+el.dataset.c]:null}
+const g=$("grid");
+g.addEventListener("pointerdown",e=>{const p=at(e);if(!p||done)return;start=p;sel=[p];show();if(!t0){t0=Date.now();timer=setInterval(upd,1000)}});
+g.addEventListener("pointermove",e=>{if(!start)return;const p=at(e);if(p){sel=line(start,p);show()}});
+addEventListener("pointerup",()=>{if(!start)return;start=null;const s=sel.map(([r,c])=>G[r][c]).join(""),rs=[...s].reverse().join("");
+LV[cur].w.forEach((w,i)=>{if(!found.has(w)&&(w===s||w===rs)&&s.length>1){found.add(w);mark(w,i)}});
+sel=[];show();upd();
+if(found.size===LV[cur].w.length&&!done){done=true;clearInterval(timer);const t=Math.floor((Date.now()-t0)/1000);$("msg").textContent="🎉 Bravo! Completato in "+t+" secondi";}});
+$("nw").onclick=gen;
+$("sol").onclick=()=>{LV[cur].w.forEach((w,i)=>{found.add(w);mark(w,i)});$("sol").textContent="Soluzioni mostrate";clearInterval(timer)};
+LV.forEach((l,i)=>{const b=document.createElement("button");b.textContent="Livello "+l.n;b.onclick=()=>{cur=i;[...$("tabs").children].forEach((x,j)=>x.className=j===i?"act":"");gen()};$("tabs").appendChild(b)});
+$("tabs").children[0].className="act";gen();
+</script></body></html>
